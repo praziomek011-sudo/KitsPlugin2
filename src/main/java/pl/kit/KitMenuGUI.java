@@ -14,6 +14,7 @@ import java.util.List;
 public class KitMenuGUI {
 
     public static final String TITLE = "§8Kity";
+    public static final int MAX_SLOT = 53;
 
     public static void open(KitPlugin plugin, Player p) {
         Collection<Kit> kits = plugin.getKitManager().getKits();
@@ -24,28 +25,55 @@ public class KitMenuGUI {
             return;
         }
 
-        int rows = Math.max(1, (int) Math.ceil(kits.size() / 9.0));
-        int size = Math.min(rows * 9, 54);
+        // 1) najwyzszy slot z jawnie ustawionych
+        int highest = -1;
+        for (Kit k : kits) {
+            if (k.getMenuSlot() >= 0 && k.getMenuSlot() > highest)
+                highest = k.getMenuSlot();
+        }
+
+        // 2) rozmiar menu: musi zmiescic najwyzszy slot, liczbe kitow i byc wielokrotnoscia 9
+        int need = Math.max(highest + 1, kits.size());
+        int size = Math.min(((need + 8) / 9) * 9, 54);
         if (size < 9) size = 9;
 
         Inventory inv = Bukkit.createInventory(null, size, TITLE);
 
-        int slot = 0;
-        for (Kit kit : kits) {
-            if (slot >= size) break;
-            ItemStack item = kit.getDisplayItem() != null
-                    ? kit.getDisplayItem().clone()
-                    : new ItemStack(Material.STONE);
+        // 3) najpierw kity z jawnie ustawionym slotem
+        List<Kit> auto = new ArrayList<>();
+        for (Kit k : kits) {
+            if (k.getMenuSlot() >= 0 && k.getMenuSlot() < size) {
+                inv.setItem(k.getMenuSlot(), buildItem(k));
+            } else {
+                auto.add(k);
+            }
+        }
 
-            ItemMeta meta = item.getItemMeta();
+        // 4) reszta (auto / poza zakresem) na pierwsze wolne sloty
+        int s = 0;
+        for (Kit k : auto) {
+            while (s < size && inv.getItem(s) != null) s++;
+            if (s >= size) break;
+            inv.setItem(s, buildItem(k));
+            s++;
+        }
+
+        p.openInventory(inv);
+    }
+
+    private static ItemStack buildItem(Kit kit) {
+        ItemStack item = kit.getDisplayItem() != null
+                ? kit.getDisplayItem().clone()
+                : new ItemStack(Material.STONE);
+
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
             meta.setDisplayName("§e§l" + kit.getName());
             List<String> lore = new ArrayList<>();
             lore.add("§7Kliknij aby zobaczyc kit");
             meta.setLore(lore);
             item.setItemMeta(meta);
-            inv.setItem(slot++, item);
         }
-
-        p.openInventory(inv);
+        return item;
     }
 }
