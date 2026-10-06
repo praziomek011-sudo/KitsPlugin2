@@ -1,7 +1,9 @@
 package pl.kit;
 
 import org.bukkit.ChatColor;
+import org.bukkit.Sound;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.entity.Player;
 
 public class ConfigManager {
     private final KitPlugin plugin;
@@ -60,6 +62,19 @@ public class ConfigManager {
 
     public boolean autoSaveOnClose() {
         return cfg().getBoolean("settings.auto-save-on-close", true);
+    }
+
+    // ===== DZWIEKI =====
+    public void playSound(Player p, String key) {
+        if (!cfg().getBoolean("sounds.enabled", true)) return;
+        String name = cfg().getString("sounds." + key + ".sound", "");
+        if (name == null || name.isEmpty()) return;
+        try {
+            Sound sound = Sound.valueOf(name.toUpperCase());
+            float volume = (float) cfg().getDouble("sounds." + key + ".volume", 1.0);
+            float pitch = (float) cfg().getDouble("sounds." + key + ".pitch", 1.0);
+            p.playSound(p.getLocation(), sound, volume, pitch);
+        } catch (IllegalArgumentException ignored) {}
     }
 
     public static String color(String s) {
