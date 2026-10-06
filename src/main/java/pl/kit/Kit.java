@@ -5,6 +5,7 @@ import org.bukkit.inventory.ItemStack;
 public class Kit {
     private final String name;
     private ItemStack displayItem;
+    private int menuSlot = -1;  // -1 = auto (pierwszy wolny)
     private final ItemStack[] inventory = new ItemStack[36];
     private ItemStack helmet, chestplate, leggings, boots, offhand;
 
@@ -14,6 +15,9 @@ public class Kit {
 
     public ItemStack getDisplayItem() { return displayItem; }
     public void setDisplayItem(ItemStack displayItem) { this.displayItem = displayItem; }
+
+    public int getMenuSlot() { return menuSlot; }
+    public void setMenuSlot(int menuSlot) { this.menuSlot = menuSlot; }
 
     public ItemStack[] getInventory() { return inventory; }
 
