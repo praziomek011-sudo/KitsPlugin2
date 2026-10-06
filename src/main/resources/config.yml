@@ -47,3 +47,10 @@ settings:
   drop-on-full-inventory: true
   # Czy auto-zapis przy zamknieciu edytora?
   auto-save-on-close: true
+
+# =====================================
+# USUWANIE KITU
+# =====================================
+# (dodaj do sekcji messages:)
+# usage-delete: "&cUzycie: /kit delete [nazwa]"
+# kit-deleted: "&aUsunieto kit &e%kit%&a!"
