@@ -23,6 +23,7 @@ public class KitManager {
             if (sec == null) continue;
             Kit kit = new Kit(key);
             kit.setDisplayItem(sec.getItemStack("display"));
+            kit.setMenuSlot(sec.getInt("slot", -1));
             for (int i = 0; i < 36; i++) {
                 kit.getInventory()[i] = sec.getItemStack("inv." + i);
             }
@@ -40,6 +41,7 @@ public class KitManager {
         for (Kit kit : kits.values()) {
             String k = kit.getName();
             cfg.set(k + ".display", kit.getDisplayItem());
+            cfg.set(k + ".slot", kit.getMenuSlot());
             for (int i = 0; i < 36; i++) {
                 if (kit.getInventory()[i] != null)
                     cfg.set(k + ".inv." + i, kit.getInventory()[i]);
@@ -68,4 +70,13 @@ public class KitManager {
     public void removeKit(String name) { kits.remove(name.toLowerCase()); }
 
     public Collection<Kit> getKits() { return kits.values(); }
+
+    // sprawdza czy dany slot jest zajety przez inny kit
+    public Kit getKitBySlot(int slot, Kit except) {
+        for (Kit k : kits.values()) {
+            if (k == except) continue;
+            if (k.getMenuSlot() == slot) return k;
+        }
+        return null;
+    }
 }
