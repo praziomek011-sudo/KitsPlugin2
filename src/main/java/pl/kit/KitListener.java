@@ -1,8 +1,6 @@
 package pl.kit;
 
-import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -11,12 +9,17 @@ import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.HashMap;
 import java.util.Map;
 
 public class KitListener implements Listener {
     private final KitPlugin plugin;
+    private final ConfigManager cfg;
 
-    public KitListener(KitPlugin plugin) { this.plugin = plugin; }
+    public KitListener(KitPlugin plugin) {
+        this.plugin = plugin;
+        this.cfg = plugin.getConfigManager();
+    }
 
     @EventHandler
     public void onClick(InventoryClickEvent e) {
@@ -38,7 +41,7 @@ public class KitListener implements Listener {
                     plugin.getEditingKit().remove(p.getUniqueId());
                     plugin.getOpenEditor().remove(p.getUniqueId());
                     p.closeInventory();
-                    p.sendMessage("§aKit §e" + editing + " §azostal zapisany!");
+                    p.sendMessage(cfg.msg("kit-saved", "%kit%", editing));
                     return;
                 }
 
@@ -48,7 +51,7 @@ public class KitListener implements Listener {
                     plugin.getEditingKit().remove(p.getUniqueId());
                     plugin.getOpenEditor().remove(p.getUniqueId());
                     p.closeInventory();
-                    p.sendMessage("§cAnulowano edycje.");
+                    p.sendMessage(cfg.msg("edit-cancelled"));
                     return;
                 }
 
@@ -82,13 +85,37 @@ public class KitListener implements Listener {
             Kit kit = plugin.getKitManager().getKit(name);
             if (kit == null) return;
 
-            int slot = e.getRawSlot();
             if (e.getClickedInventory() != inv) return;
+            int slot = e.getRawSlot();
 
             if (slot == KitPreviewGUI.SLOT_CONFIRM) {
+                // sprawdz permisje per-kit
+                if (cfg.enforcePermissions() && !p.isOp()) {
+                    String perKit = "kitplugin.kit." + kit.getName().toLowerCase();
+                    boolean hasGlobal = p.hasPermission(cfg.perm("receive"));
+                    boolean hasKit = p.hasPermission(perKit);
+                    if (!hasGlobal && !hasKit) {
+                        p.sendMessage(cfg.msg("no-permission-kit"));
+                        p.closeInventory();
+                        return;
+                    }
+                }
+
+                // sprawdz cooldown
+                long remaining = getRemainingCooldown(p, kit.getName());
+                if (remaining > 0) {
+                    String msg = cfg.cooldownMessage()
+                            .replace("%time%", String.valueOf(remaining))
+                            .replace("%kit%", kit.getName());
+                    p.sendMessage(msg);
+                    p.closeInventory();
+                    return;
+                }
+
                 giveKit(p, kit);
+                setCooldown(p, kit.getName());
                 p.closeInventory();
-                p.sendMessage("§aOtrzymales kit §e" + kit.getName() + "§a!");
+                p.sendMessage(cfg.msg("kit-received", "%kit%", kit.getName()));
             } else if (slot == KitPreviewGUI.SLOT_CANCEL) {
                 p.closeInventory();
             }
@@ -112,10 +139,12 @@ public class KitListener implements Listener {
         }
 
         // zapis przy zamknieciu krzyzykiem
-        saveEditor(inv, editing);
+        if (cfg.autoSaveOnClose()) {
+            saveEditor(inv, editing);
+            p.sendMessage(cfg.msg("kit-auto-saved", "%kit%", editing));
+        }
         plugin.getEditingKit().remove(p.getUniqueId());
         plugin.getOpenEditor().remove(p.getUniqueId());
-        p.sendMessage("§aKit §e" + editing + " §azostal automatycznie zapisany.");
     }
 
     private void saveEditor(Inventory inv, String kitName) {
@@ -141,8 +170,10 @@ public class KitListener implements Listener {
         for (ItemStack item : kit.getInventory()) {
             if (item == null) continue;
             Map<Integer, ItemStack> leftover = p.getInventory().addItem(item.clone());
-            for (ItemStack drop : leftover.values()) {
-                p.getWorld().dropItemNaturally(p.getLocation(), drop);
+            if (cfg.dropOnFullInventory()) {
+                for (ItemStack drop : leftover.values()) {
+                    p.getWorld().dropItemNaturally(p.getLocation(), drop);
+                }
             }
         }
         if (kit.getHelmet() != null) p.getInventory().setHelmet(kit.getHelmet().clone());
@@ -150,5 +181,30 @@ public class KitListener implements Listener {
         if (kit.getLeggings() != null) p.getInventory().setLeggings(kit.getLeggings().clone());
         if (kit.getBoots() != null) p.getInventory().setBoots(kit.getBoots().clone());
         if (kit.getOffhand() != null) p.getInventory().setItemInOffHand(kit.getOffhand().clone());
+    }
+
+    // ===== Cooldown =====
+    private long getRemainingCooldown(Player p, String kitName) {
+        int sec = cfg.cooldownSeconds();
+        if (sec <= 0) return 0;
+
+        Map<String, Long> map = plugin.getCooldowns().get(p.getUniqueId());
+        if (map == null) return 0;
+
+        Long end = map.get(kitName.toLowerCase());
+        if (end == null) return 0;
+
+        long diff = end - System.currentTimeMillis();
+        if (diff <= 0) return 0;
+        return (diff / 1000) + 1;
+    }
+
+    private void setCooldown(Player p, String kitName) {
+        int sec = cfg.cooldownSeconds();
+        if (sec <= 0) return;
+
+        plugin.getCooldowns()
+                .computeIfAbsent(p.getUniqueId(), k -> new HashMap<>())
+                .put(kitName.toLowerCase(), System.currentTimeMillis() + (sec * 1000L));
     }
 }
