@@ -17,6 +17,13 @@ public class KitMenuGUI {
 
     public static void open(KitPlugin plugin, Player p) {
         Collection<Kit> kits = plugin.getKitManager().getKits();
+        ConfigManager cfg = plugin.getConfigManager();
+
+        if (kits.isEmpty()) {
+            p.sendMessage(cfg.msg("no-kits"));
+            return;
+        }
+
         int rows = Math.max(1, (int) Math.ceil(kits.size() / 9.0));
         int size = Math.min(rows * 9, 54);
         if (size < 9) size = 9;
