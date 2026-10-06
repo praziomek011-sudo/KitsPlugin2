@@ -40,6 +40,7 @@ public class KitListener implements Listener {
                     plugin.getSkipSave().add(p.getUniqueId());
                     plugin.getEditingKit().remove(p.getUniqueId());
                     plugin.getOpenEditor().remove(p.getUniqueId());
+                    cfg.playSound(p, "save");
                     p.closeInventory();
                     p.sendMessage(cfg.msg("kit-saved", "%kit%", editing));
                     return;
@@ -50,6 +51,7 @@ public class KitListener implements Listener {
                     plugin.getSkipSave().add(p.getUniqueId());
                     plugin.getEditingKit().remove(p.getUniqueId());
                     plugin.getOpenEditor().remove(p.getUniqueId());
+                    cfg.playSound(p, "cancel");
                     p.closeInventory();
                     p.sendMessage(cfg.msg("edit-cancelled"));
                     return;
@@ -73,6 +75,7 @@ public class KitListener implements Listener {
             String name = ChatColor.stripColor(clicked.getItemMeta().getDisplayName());
             Kit kit = plugin.getKitManager().getKit(name);
             if (kit != null) {
+                cfg.playSound(p, "click");
                 KitPreviewGUI.open(plugin, p, kit);
             }
             return;
@@ -84,26 +87,28 @@ public class KitListener implements Listener {
             String name = title.substring("§8Kit: ".length());
             Kit kit = plugin.getKitManager().getKit(name);
             if (kit == null) return;
-
             if (e.getClickedInventory() != inv) return;
+
             int slot = e.getRawSlot();
 
             if (slot == KitPreviewGUI.SLOT_CONFIRM) {
-                // sprawdz permisje per-kit
+                // permisje per-kit
                 if (cfg.enforcePermissions() && !p.isOp()) {
                     String perKit = "kitplugin.kit." + kit.getName().toLowerCase();
                     boolean hasGlobal = p.hasPermission(cfg.perm("receive"));
                     boolean hasKit = p.hasPermission(perKit);
                     if (!hasGlobal && !hasKit) {
+                        cfg.playSound(p, "cancel");
                         p.sendMessage(cfg.msg("no-permission-kit"));
                         p.closeInventory();
                         return;
                     }
                 }
 
-                // sprawdz cooldown
+                // cooldown
                 long remaining = getRemainingCooldown(p, kit.getName());
                 if (remaining > 0) {
+                    cfg.playSound(p, "cancel");
                     String msg = cfg.cooldownMessage()
                             .replace("%time%", String.valueOf(remaining))
                             .replace("%kit%", kit.getName());
@@ -114,9 +119,11 @@ public class KitListener implements Listener {
 
                 giveKit(p, kit);
                 setCooldown(p, kit.getName());
+                cfg.playSound(p, "confirm");
                 p.closeInventory();
                 p.sendMessage(cfg.msg("kit-received", "%kit%", kit.getName()));
             } else if (slot == KitPreviewGUI.SLOT_CANCEL) {
+                cfg.playSound(p, "cancel");
                 p.closeInventory();
             }
         }
@@ -138,7 +145,6 @@ public class KitListener implements Listener {
             return;
         }
 
-        // zapis przy zamknieciu krzyzykiem
         if (cfg.autoSaveOnClose()) {
             saveEditor(inv, editing);
             p.sendMessage(cfg.msg("kit-auto-saved", "%kit%", editing));
@@ -152,18 +158,24 @@ public class KitListener implements Listener {
         if (kit == null) return;
 
         for (int i = 0; i < 36; i++) {
-            kit.getInventory()[i] = inv.getItem(i);
+            kit.getInventory()[i] = filter(inv.getItem(i));
         }
-        kit.setHelmet(inv.getItem(KitEditorGUI.SLOT_HELMET));
-        kit.setChestplate(inv.getItem(KitEditorGUI.SLOT_CHEST));
-        kit.setLeggings(inv.getItem(KitEditorGUI.SLOT_LEGS));
-        kit.setBoots(inv.getItem(KitEditorGUI.SLOT_BOOTS));
-        kit.setOffhand(inv.getItem(KitEditorGUI.SLOT_OFFHAND));
+        kit.setHelmet(filter(inv.getItem(KitEditorGUI.SLOT_HELMET)));
+        kit.setChestplate(filter(inv.getItem(KitEditorGUI.SLOT_CHEST)));
+        kit.setLeggings(filter(inv.getItem(KitEditorGUI.SLOT_LEGS)));
+        kit.setBoots(filter(inv.getItem(KitEditorGUI.SLOT_BOOTS)));
+        kit.setOffhand(filter(inv.getItem(KitEditorGUI.SLOT_OFFHAND)));
 
         ItemStack display = inv.getItem(KitEditorGUI.SLOT_DISPLAY);
-        if (display != null) kit.setDisplayItem(display);
+        if (display != null && !KitEditorGUI.isPlaceholder(display)) {
+            kit.setDisplayItem(display);
+        }
 
         plugin.getKitManager().save();
+    }
+
+    private ItemStack filter(ItemStack item) {
+        return KitEditorGUI.isPlaceholder(item) ? null : item;
     }
 
     private void giveKit(Player p, Kit kit) {
@@ -183,17 +195,13 @@ public class KitListener implements Listener {
         if (kit.getOffhand() != null) p.getInventory().setItemInOffHand(kit.getOffhand().clone());
     }
 
-    // ===== Cooldown =====
     private long getRemainingCooldown(Player p, String kitName) {
         int sec = cfg.cooldownSeconds();
         if (sec <= 0) return 0;
-
         Map<String, Long> map = plugin.getCooldowns().get(p.getUniqueId());
         if (map == null) return 0;
-
         Long end = map.get(kitName.toLowerCase());
         if (end == null) return 0;
-
         long diff = end - System.currentTimeMillis();
         if (diff <= 0) return 0;
         return (diff / 1000) + 1;
@@ -202,7 +210,6 @@ public class KitListener implements Listener {
     private void setCooldown(Player p, String kitName) {
         int sec = cfg.cooldownSeconds();
         if (sec <= 0) return;
-
         plugin.getCooldowns()
                 .computeIfAbsent(p.getUniqueId(), k -> new HashMap<>())
                 .put(kitName.toLowerCase(), System.currentTimeMillis() + (sec * 1000L));
