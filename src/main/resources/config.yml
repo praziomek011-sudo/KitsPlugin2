@@ -1,0 +1,32 @@
+# =====================================
+# KitPlugin - konfiguracja
+# =====================================
+
+# Prefix wiadomości
+prefix: "&8[&eKity&8] &r"
+
+# Wiadomości
+messages:
+  no-permission: "&cNie masz uprawnien!"
+  kit-created: "&aUtworzono kit &e%kit%&a!"
+  kit-exists: "&cKit o nazwie &e%kit% &cjuz istnieje!"
+  kit-not-found: "&cNie znaleziono kitu: &e%kit%"
+  kit-received: "&aOtrzymales kit &e%kit%&a!"
+  kit-saved: "&aKit &e%kit% &azostal zapisany!"
+  edit-cancelled: "&cAnulowano edycje."
+  player-only: "&cTylko gracz moze uzywac tej komendy!"
+
+# Cooldown w sekundach (0 = brak)
+cooldown-seconds: 60
+
+# Wiadomość o cooldownie (%time% = pozostały czas)
+cooldown-message: "&cPoczekaj jeszcze &e%time%s &cprzed kolejnym odbiorem!"
+
+# Zachowanie
+settings:
+  # Czy itemy maja wypadac na ziemie gdy eq pelny?
+  drop-on-full-inventory: true
+  # Czy auto-zapis przy zamknieciu edytora?
+  auto-save-on-close: true
+  # Ile kitow na strone w menu (9, 18, 27, 36, 45, 54)
+  kits-per-page: 45
