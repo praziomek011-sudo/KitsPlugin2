@@ -14,10 +14,12 @@ messages:
   kit-received: "&aOtrzymales kit &e%kit%&a!"
   kit-saved: "&aKit &e%kit% &azostal zapisany!"
   kit-auto-saved: "&aKit &e%kit% &azostal automatycznie zapisany."
+  kit-deleted: "&aUsunieto kit &e%kit%&a!"
   edit-cancelled: "&cAnulowano edycje."
   player-only: "&cTylko gracz moze uzywac tej komendy!"
   usage-create: "&cUzycie: /kit create [nazwa] [item]"
   usage-edit: "&cUzycie: /kit edit [nazwa]"
+  usage-delete: "&cUzycie: /kit delete [nazwa]"
   invalid-item: "&cNieprawidlowy item: &e%item%"
   no-kits: "&7Brak dostepnych kitow."
   no-permission-kit: "&cNie masz uprawnien do tego kitu!"
@@ -56,3 +58,29 @@ settings:
 # (dodaj do sekcji messages:)
 # usage-delete: "&cUzycie: /kit delete [nazwa]"
 # kit-deleted: "&aUsunieto kit &e%kit%&a!"
+
+# =====================================
+# DZWIEKI
+# =====================================
+sounds:
+  enabled: true
+  # dzwiek klikniecia w menu z kitami
+  click:
+    sound: UI_BUTTON_CLICK
+    volume: 0.7
+    pitch: 1.2
+  # dzwiek potwierdzenia odebrania kitu
+  confirm:
+    sound: ENTITY_PLAYER_LEVELUP
+    volume: 0.8
+    pitch: 1.2
+  # dzwiek anulowania
+  cancel:
+    sound: BLOCK_NOTE_BLOCK_BASS
+    volume: 0.8
+    pitch: 0.8
+  # dzwiek zapisu w edytorze
+  save:
+    sound: BLOCK_NOTE_BLOCK_PLING
+    volume: 1.0
+    pitch: 1.5
