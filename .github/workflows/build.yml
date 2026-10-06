@@ -1,5 +1,3 @@
-3. Wklej:
-```yaml
 name: Build
 
 on:
